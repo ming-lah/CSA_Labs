@@ -39,7 +39,7 @@ def add_options(parser):
     parser.add_argument("--num-iq-entries", type=int, default=64)
     parser.add_argument("--num-phys-int-regs", type=int, default=256)
 
-    # 新增的防止GDB卡住
+    # 防止gdb卡住的
     parser.add_argument("--gdb-port", type=int, default=0,
                         help="Enable remote GDB on this port (0 = disable).")
     parser.add_argument("--gdb-wait", action="store_true",
@@ -87,17 +87,26 @@ system.workload = SEWorkload.init_compatible(args.cmd)
 system.cpu.workload = process
 system.cpu.createThreads()
 
-# ====== 新增：显式控制GDB======
-# 明确告知不要等待 gdb（除非显式 --gdb-wait）
+# ===== 强制关闭 GDB 等待（无论谁把它打开过） =====
+# 1) 等待标志 一律 False
 if hasattr(system.cpu, "wait_for_remote_gdb"):
-    system.cpu.wait_for_remote_gdb = args.gdb_wait
+    system.cpu.wait_for_remote_gdb = False
 if hasattr(system, "workload") and hasattr(system.workload, "wait_for_remote_gdb"):
-    system.workload.wait_for_remote_gdb = args.gdb_wait
+    system.workload.wait_for_remote_gdb = False
 
-# 仅当指定端口>0时才启用 remote-gdb 监听
-if args.gdb_port and args.gdb_port > 0:
-    system.remote_gdb = RemoteGDB(system, args.gdb_port)
-# =========================================
+# 2) 如果真的存在 remote_gdb 对象，直接移除
+try:
+    if hasattr(system, "remote_gdb"):
+        delattr(system, "remote_gdb")  # 某些版本允许删除；不行也不会报错
+except Exception:
+    pass
+
+# 3) 打印状态，方便你一眼确认
+print(f"[GDB] wait_on_cpu={getattr(system.cpu,'wait_for_remote_gdb',None)} "
+      f"wait_on_workload={getattr(system.workload,'wait_for_remote_gdb',None)} "
+      f"has_remote_gdb={hasattr(system,'remote_gdb')}")
+# ===============================================
+
 
 
 # Instantiate and run

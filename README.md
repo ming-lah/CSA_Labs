@@ -69,5 +69,6 @@ scons build/RISCV/gem5.opt -j 2
 
 完成构建后可以进行简单的检验，查看是否正确安装，使用如下命令，如果终端出现Hello world!则郑明明正确安装。
 ```powershell
+cd ~/gem5
 build/RISCV/gem5.opt configs/deprecated/example/se.py  -c tests/test-progs/hello/bin/riscv/linux/hello
 ```
